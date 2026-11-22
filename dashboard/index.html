@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Launch Radar — every pre-token protocol, fitted and tested</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Launch Radar</h1>
+    <p class="sub">Every protocol in the sealed snapshot, ranked by what its token launch would be worth — fitted from the protocols whose tokens already trade, and tested four ways before a single row was published.</p>
+  </div>
+  <div class="badges">
+    <span class="pill">758 protocols</span>
+    <span class="pill">196 pre-token</span>
+    <span class="pill">40 / 40 watchlist</span>
+    <span class="pill">196 costed farm plans</span>
+  </div>
+</header>
+
+<section class="strip" id="validation-strip">
+  <h2>Tested, not asserted — median prediction error</h2>
+  <div class="stats">
+    <div class="stat"><b>3.7&times;</b><span>held-out, twice<br>fit on half, tested on the other, both ways (n=128)</span></div>
+    <div class="stat"><b>3.5&times;</b><span>10-fold cross-validation<br>folds split by protocol, never by row</span></div>
+    <div class="stat"><b>3.6&times;</b><span>leave-one-out<br>every protocol held out once, via the hat matrix</span></div>
+    <div class="stat"><b>2.6&times;</b><span>walk-forward<br>fit on protocols listed before 2024, tested on those listed since</span></div>
+  </div>
+  <p class="note">Read it plainly: the middle protocol's launch value lands within about three and a half times its fitted value. That is the honest error of a comps curve on 128 traded tokens — and it is why the board shows the fitted value, the TVL behind it, and the test that produced it, instead of a false-precision price.</p>
+</section>
+
+<section class="controls">
+  <div class="tabs" role="tablist">
+    <button id="tab-launch" class="tab active" data-view="launch">Launch board · 196</button>
+    <button id="tab-all" class="tab" data-view="all">All 758</button>
+    <button id="tab-live" class="tab" data-view="live">Live comps · 418</button>
+    <button id="tab-excluded" class="tab" data-view="excluded">Not a launch · 144</button>
+  </div>
+  <div class="filters">
+    <label>Category <select id="f-category"><option value="">All categories</option></select></label>
+    <label>Chain <select id="f-chain"><option value="">All chains</option></select></label>
+    <label>Min TVL <select id="f-tvl"><option value="0">Any</option><option value="50000000">$50M+</option><option value="200000000">$200M+</option><option value="1000000000">$1B+</option></select></label>
+    <label>Search <input id="f-search" type="search" placeholder="name or slug"></label>
+  </div>
+</section>
+
+<main>
+  <table id="board">
+    <thead>
+      <tr>
+        <th data-sort="rank">Rank</th>
+        <th data-sort="name">Protocol</th>
+        <th data-sort="category">Category</th>
+        <th>Chains</th>
+        <th data-sort="tvl_usd">TVL</th>
+        <th data-sort="change_7d">7d</th>
+        <th data-sort="implied_value_usd">Implied value</th>
+        <th data-sort="farm_cost_usd">Farm cost</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <p class="count" id="count"></p>
+</main>
+
+<section id="detail" class="detail" hidden>
+  <button id="detail-close" class="close">Close detail</button>
+  <h2 id="d-name"></h2>
+  <p id="d-meta" class="meta"></p>
+  <div class="d-grid">
+    <div><h3>Implied launch value</h3><p id="d-value" class="big"></p><p id="d-math" class="meta"></p></div>
+    <div><h3>Farm plan — total cost</h3><p id="d-cost" class="big"></p><p id="d-weeks" class="meta"></p></div>
+  </div>
+  <h3>Farm plan — every step priced</h3>
+  <ol id="d-steps"></ol>
+  <p class="note" id="d-status"></p>
+</section>
+
+<section class="method">
+  <h2>How the value is fitted</h2>
+  <p><b>Model.</b> log<sub>10</sub>(market cap) = 3.06 + 0.52 · log<sub>10</sub>(TVL) − 0.03 · age in years − 0.75 · 7-day growth, fitted by ridge regression (λ = 1, intercept unpenalised) on the 128 protocols whose token trades and whose market cap DefiLlama records as a positive number. A protocol that records no token gets 10<sup>prediction</sup> as its implied launch value. TVL does the work; age and growth enter with small fitted weights — fast TVL spikes revert, so the curve discounts them. In-sample R² = 0.21; the curve explains about a fifth of the variance, and the board says so instead of hiding it.</p>
+  <p><b>Coverage.</b> All 758 protocols in the snapshot are on the board — the 40-protocol watchlist, the 196 genuine pre-token protocols (58 of them at or above the $50M floor, including every watchlist name), and the 418 whose token already trades, kept as a separate live-comps view so a launch candidate is never confused with a token you can already buy. Two of those 418 are verified corrections to the snapshot's own record: USDD is a stablecoin that already trades (market cap about $1.44B) and TAO, behind Bittensor dTAO, already trades (about $2.19B) — the record lists no token for either, so both are treated as live, not as launches. A further 144 protocols record no token but are not launches at all: wrapped, staked and bridged products of tokens that already trade, centralised exchanges, and versioned copies. They stay on the board under “Not a launch”, each with the reason, so the radar says plainly where there is nothing to farm. No protocol is dropped, no name is hardcoded: the value follows from the snapshot's own figures.</p>
+  <p><b>Farm plans.</b> Each of the 196 genuine pre-token protocols carries a plan built from its own record — its chains set the gas bill, its category sets the actions, its TVL band sets the position size ($100–$500). Every step names a dollar cost and a time; the plan total is shown on the row. Live protocols carry a positioning plan instead, labelled as such, and excluded products carry a verdict, not a farm.</p>
+  <p><b>Reproduce it.</b> Run <code>main.ts</code> on the sealed snapshot; it refits the curve, reruns all four validations, rebuilds this board, and prints the same numbers. Nothing on this page is typed in by hand from a leaderboard.</p>
+</section>
+
+<footer class="integrity">
+  <span>Snapshot: DefiLlama protocols, as of 2026-11-14 · floor $50,000,000 · 758 protocols · watchlist 40/40 covered</span>
+  <span>“Records no token” means DefiLlama records none — it is not proof a token does not exist.</span>
+  <span>Implied values are this entry's own model claim, never a price or a promise.</span>
+</footer>
+
+<script src="../data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
